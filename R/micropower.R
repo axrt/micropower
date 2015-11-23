@@ -451,17 +451,35 @@ bootDM <- function(dm,subject_group_vector) {
 #' @export
 #' @examples
 #' bootPower(lapply(simPower(),calcUJstudy))
-bootPower <- function(dm_list,boot_number=100,subject_group_vector=c(3,4,5),alpha=0.05) {
+bootPower <- function(dm_list,boot_number=100,subject_group_vector=c(3,4,5),alpha=0.05, cores=1) {
+  require(doParallel)
+  cl<- makeCluster(cores)
   e <- rep(names(dm_list),each=boot_number)
-  simulated_omega2 <- rep(sapply(dm_list,calcOmega2),each=boot_number)
-  dm <- lapply(dm_list,FUN=function(x) {lapply(seq(boot_number),FUN=function(y) {bootDM(x,subject_group_vector)})})
-  o <- lapply(dm,FUN=function(x) {sapply(x,calcOmega2)})
-  p <- lapply(dm,FUN=function(x) {lapply(x,PERMANOVA)})
-  r <- lapply(p,FUN=function(x) {sapply(x,calcR2)})
-  p <- lapply(p,FUN=function(x) {sapply(x,calcPERMANOVAp)})
+  
+  simulated_omega2 <- rep(parSapplyLB(cl = cl, dm_list,calcOmega2),each=boot_number)
+  
+  dm <- parLapply(cl = cl, dm_list,FUN=function(x) {
+    parLapply(cl = cl, seq(boot_number),FUN=function(y) {
+      bootDM(x,subject_group_vector)
+    })
+  })
+  o <- parLapply(cl = cl,dm,FUN=function(x) {
+    parSapply(cl = cl, x, calcOmega2)
+  })
+  p <- parLapply(cl = cl,dm,FUN=function(x) {
+    parLapply(cl = cl,x,PERMANOVA)
+  })
+  r <- parLapply(cl = cl,p,FUN=function(x) {
+    parSapply(cl = cl,x,calcR2)
+    })
+  p <- parLapply(cl = cl,p,FUN=function(x) {
+    parSapply(cl = cl,calcPERMANOVAp)})
+  
   dm <- data.frame(effect=e,simulated_omega2=simulated_omega2,observed_omega2=do.call(c,o),observed_R2=do.call(c,r),p=do.call(c,p))
   dm <- ddply(dm,.(effect),here(transform),power=length(p[p<alpha])/length(p))
   dm$observed_omega2[dm$observed_omega2<0] <- 0
   dm$simulated_omega2[dm$simulated_omega2<0] <- 0
+  
+  stopCluster(cl)
   return(dm)
 }

@@ -471,7 +471,7 @@ bootPower <- function(dm_list,boot_number=100,subject_group_vector=c(3,4,5),alph
     })
   })
   o <- parLapply(cl = cl,dm,fun=function(x) {
-    sapply(x, calcOmega2)
+    sapply(x, FUN=calcOmega2)
   })
   p <- parLapply(cl = cl,dm,fun=function(x) {
     lapply(x,FUN=PERMANOVA)

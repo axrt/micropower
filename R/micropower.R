@@ -123,6 +123,7 @@ simNull <- function(group_size_vector=c(100,100,100),otu_number=1000,sequence_de
 #' @param sequence_depth number of sequence counts per OTU bin
 #' @param rare_depth proportion of sequence counts to retain after subsampling
 #' @param effect_range range of proportions of unique community membership in affected group of subjects
+#' @param cores defaults to 1, uses doParallel to achieve faster sampling
 #' @return list of two-dimensional-matrix OTU tables, with row and column names to suit downstream analysis
 #' @seealso \code{\link{simStudy}}, \code{\link{calcUJstudy}}, \code{\link{calcWJstudy}}
 #' @export
@@ -451,6 +452,7 @@ bootDM <- function(dm,subject_group_vector) {
 #' @param boot_number the number of bootstrap samples to perform on each distance matrix in the list
 #' @param subject_group_vector number of subjects in each group to sample, as a vector.
 #' @param alpha the threshold for PERMANOVA type I error
+#' @param cores defaults to 1, uses doParallel to achieve faster sampling
 #' @return A data frame relating PERMANOVA power to effect size quantified by the coefficient of determination (R^2) and omega-squared.
 #' @seealso \code{\link{simPower}}, \code{\link{bootDM}}
 #' @export
@@ -464,21 +466,21 @@ bootPower <- function(dm_list,boot_number=100,subject_group_vector=c(3,4,5),alph
   simulated_omega2 <- rep(parSapply(cl = cl, dm_list,calcOmega2),each=boot_number)
   
   dm <- parLapply(cl = cl, dm_list,fun=function(x) {
-    parLapply(cl = cl, seq(boot_number),fun=function(y) {
+    lapply(seq(boot_number),FUN=function(y) {
       bootDM(x,subject_group_vector)
     })
   })
   o <- parLapply(cl = cl,dm,fun=function(x) {
-    parSapply(cl = cl, x, calcOmega2)
+    sapply(x, calcOmega2)
   })
   p <- parLapply(cl = cl,dm,fun=function(x) {
-    parLapply(cl = cl,x,PERMANOVA)
+    lapply(x,PERMANOVA)
   })
   r <- parLapply(cl = cl,p,fun=function(x) {
-    parSapply(cl = cl,x,calcR2)
+    sapply(x,calcR2)
   })
   p <- parLapply(cl = cl,p,fun=function(x) {
-    parSapply(cl = cl,calcPERMANOVAp)
+    sapply(calcPERMANOVAp)
   })
   
   dm <- data.frame(effect=e,simulated_omega2=simulated_omega2,observed_omega2=do.call(c,o),observed_R2=do.call(c,r),p=do.call(c,p))

@@ -474,13 +474,13 @@ bootPower <- function(dm_list,boot_number=100,subject_group_vector=c(3,4,5),alph
     sapply(x, calcOmega2)
   })
   p <- parLapply(cl = cl,dm,fun=function(x) {
-    lapply(x,PERMANOVA)
+    lapply(x,FUN=PERMANOVA)
   })
   r <- parLapply(cl = cl,p,fun=function(x) {
-    sapply(x,calcR2)
+    sapply(x,FUN=calcR2)
   })
   p <- parLapply(cl = cl,p,fun=function(x) {
-    sapply(calcPERMANOVAp)
+    sapply(x,FUN=calcPERMANOVAp)
   })
   
   dm <- data.frame(effect=e,simulated_omega2=simulated_omega2,observed_omega2=do.call(c,o),observed_R2=do.call(c,r),p=do.call(c,p))

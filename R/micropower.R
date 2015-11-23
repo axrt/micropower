@@ -456,7 +456,7 @@ bootPower <- function(dm_list,boot_number=100,subject_group_vector=c(3,4,5),alph
   cl<- makeCluster(cores)
   e <- rep(names(dm_list),each=boot_number)
   
-  simulated_omega2 <- rep(parSapplyLB(cl = cl, dm_list,calcOmega2),each=boot_number)
+  simulated_omega2 <- rep(parSapply(cl = cl, dm_list,calcOmega2),each=boot_number)
   
   dm <- parLapply(cl = cl, dm_list,FUN=function(x) {
     parLapply(cl = cl, seq(boot_number),FUN=function(y) {
@@ -471,9 +471,10 @@ bootPower <- function(dm_list,boot_number=100,subject_group_vector=c(3,4,5),alph
   })
   r <- parLapply(cl = cl,p,FUN=function(x) {
     parSapply(cl = cl,x,calcR2)
-    })
+  })
   p <- parLapply(cl = cl,p,FUN=function(x) {
-    parSapply(cl = cl,calcPERMANOVAp)})
+    parSapply(cl = cl,calcPERMANOVAp)
+  })
   
   dm <- data.frame(effect=e,simulated_omega2=simulated_omega2,observed_omega2=do.call(c,o),observed_R2=do.call(c,r),p=do.call(c,p))
   dm <- ddply(dm,.(effect),here(transform),power=length(p[p<alpha])/length(p))

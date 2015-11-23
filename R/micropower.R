@@ -129,11 +129,14 @@ simNull <- function(group_size_vector=c(100,100,100),otu_number=1000,sequence_de
 #' @examples
 #' simPower(c(16,16,16),100,10,0.8,seq(0,0.3,length.out=100))
 #' sapply(simPower(c(16,16,16),100,10,0.8,seq(0,0.3,length.out=100)),FUN=function(x) {calcOmega2(calcWJstudy(x))})
-simPower <- function(group_size_vector=c(100,100,100), otu_number=1000, sequence_depth=1, rare_depth=0.5, effect_range=seq(0,0.3,length.out=100)) {
+simPower <- function(group_size_vector=c(100,100,100), otu_number=1000, sequence_depth=1, rare_depth=0.5, effect_range=seq(0,0.3,length.out=100), cores=1) {
+  require(doParallel)
+  cl<- makeCluster(cores)
   p <- structure(.Data=as.list(effect_range),.Names=as.character(effect_range))
-  p <- lapply(p,FUN=function(x) {simStudy(group_size_vector,otu_number,sequence_depth,rare_depth,x)})
+  p <- parLapply(cl=cl,p,FUN=function(x) {simStudy(group_size_vector,otu_number,sequence_depth,rare_depth,x)})
   n <- structure(.Data=list(simNull(group_size_vector,otu_number,sequence_depth,rare_depth)),.Names="null")
   p <- c(n,p)
+  stopCluster(cl)
   return(p)
 }
 

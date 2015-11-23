@@ -133,7 +133,9 @@ simPower <- function(group_size_vector=c(100,100,100), otu_number=1000, sequence
   require(doParallel)
   cl<- makeCluster(cores)
   p <- structure(.Data=as.list(effect_range),.Names=as.character(effect_range))
-  p <- parLapply(cl=cl,p,FUN=function(x) {simStudy(group_size_vector,otu_number,sequence_depth,rare_depth,x)})
+  p <- parLapply(cl=cl,p,fun=function(x) {
+    simStudy(group_size_vector,otu_number,sequence_depth,rare_depth,x)
+    })
   n <- structure(.Data=list(simNull(group_size_vector,otu_number,sequence_depth,rare_depth)),.Names="null")
   p <- c(n,p)
   stopCluster(cl)
@@ -461,21 +463,21 @@ bootPower <- function(dm_list,boot_number=100,subject_group_vector=c(3,4,5),alph
   
   simulated_omega2 <- rep(parSapply(cl = cl, dm_list,calcOmega2),each=boot_number)
   
-  dm <- parLapply(cl = cl, dm_list,FUN=function(x) {
-    parLapply(cl = cl, seq(boot_number),FUN=function(y) {
+  dm <- parLapply(cl = cl, dm_list,fun=function(x) {
+    parLapply(cl = cl, seq(boot_number),fun=function(y) {
       bootDM(x,subject_group_vector)
     })
   })
-  o <- parLapply(cl = cl,dm,FUN=function(x) {
+  o <- parLapply(cl = cl,dm,fun=function(x) {
     parSapply(cl = cl, x, calcOmega2)
   })
-  p <- parLapply(cl = cl,dm,FUN=function(x) {
+  p <- parLapply(cl = cl,dm,fun=function(x) {
     parLapply(cl = cl,x,PERMANOVA)
   })
-  r <- parLapply(cl = cl,p,FUN=function(x) {
+  r <- parLapply(cl = cl,p,fun=function(x) {
     parSapply(cl = cl,x,calcR2)
   })
-  p <- parLapply(cl = cl,p,FUN=function(x) {
+  p <- parLapply(cl = cl,p,fun=function(x) {
     parSapply(cl = cl,calcPERMANOVAp)
   })
   
